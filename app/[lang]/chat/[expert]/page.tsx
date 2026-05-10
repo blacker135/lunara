@@ -3,6 +3,8 @@
 // ============================================================
 // 客户端组件，负责整个对话页的编排：
 //   - 解析 URL 参数（lang、expert）和查询参数（c=conversation_id、q=预填问题）
+//   - 管理移动端侧边栏开关状态（sidebarOpen）
+//   - 管理错误状态（error）和限流错误（rateLimited）
 //   - 管理专家切换面板的开关状态
 //   - 管理消息列表状态
 //   - handleSend：发送消息 → POST /api/chat → SSE 流式读取
@@ -36,12 +38,17 @@ export default function ChatPageClient() {
   const searchParams = useSearchParams();
 
   // ---------- UI 状态 ----------
+  const [sidebarOpen, setSidebarOpen] = useState(false); // 移动端侧边栏开关
   const [expertPanelOpen, setExpertPanelOpen] = useState(false);
   const [currentExpert, setCurrentExpert] = useState(params.expert || 'liam');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(
     searchParams.get('c'),
   );
+  // 错误状态管理
+  const [error, setError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [sending, setSending] = useState(false);
 
   // ---------- 处理 URL 预填问题 ----------
   useEffect(() => {
@@ -56,7 +63,12 @@ export default function ChatPageClient() {
   // ---------- 发送消息 ----------
   const handleSend = useCallback(
     async (message: string) => {
-      if (!message.trim()) return;
+      if (!message.trim() || sending) return;
+
+      // 清除之前的错误状态
+      setError(null);
+      setRateLimited(false);
+      setSending(true);
 
       // 立即将用户消息添加到列表（乐观更新）
       const userMsg: ChatMessage = { role: 'user', content: message };
@@ -75,16 +87,28 @@ export default function ChatPageClient() {
           }),
         });
 
+        // 限流错误特殊处理（429 Too Many Requests）
+        if (res.status === 429) {
+          setRateLimited(true);
+          setError('发送太快了，请稍等片刻再试。'); // Sending too fast
+          // 移除已添加的用户消息（乐观更新回滚）
+          setMessages((prev) => prev.filter((m) => m !== userMsg));
+          return;
+        }
+
         if (!res.ok) {
-          // API 错误处理 — 显示错误消息
+          // 其他 API 错误处理 — 显示错误消息
           const errData = await res.json().catch(() => ({
             error: 'Unknown error',
           }));
+          const errMsg =
+            errData.error || 'Something went wrong. Please try again.';
+          setError(errMsg);
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: errData.error || 'Something went wrong. Please try again.',
+              content: errMsg,
             },
           ]);
           return;
@@ -93,12 +117,11 @@ export default function ChatPageClient() {
         // 读取 SSE 流
         const reader = res.body?.getReader();
         if (!reader) {
+          const errMsg = 'Failed to connect to chat service.';
+          setError(errMsg);
           setMessages((prev) => [
             ...prev,
-            {
-              role: 'assistant',
-              content: 'Failed to connect to chat service.',
-            },
+            { role: 'assistant', content: errMsg },
           ]);
           return;
         }
@@ -136,11 +159,13 @@ export default function ChatPageClient() {
                 });
               }
               if (parsed.error) {
+                const streamErr = `Error: ${parsed.error}`;
+                setError(streamErr);
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1] = {
                     role: 'assistant',
-                    content: `Error: ${parsed.error}`,
+                    content: streamErr,
                   };
                   return updated;
                 });
@@ -152,20 +177,25 @@ export default function ChatPageClient() {
         }
       } catch (err) {
         console.error('Chat send error:', err);
+        const netErr = '网络错误，请检查连接后重试。';
+        setError(netErr);
         setMessages((prev) => [
           ...prev,
-          {
-            role: 'assistant',
-            content: 'Network error. Please check your connection and try again.',
-          },
+          { role: 'assistant', content: netErr },
         ]);
+      } finally {
+        setSending(false);
       }
     },
-    [conversationId, currentExpert, params.lang],
+    [conversationId, currentExpert, params.lang, sending],
   );
 
   // ---------- 切换专家 ----------
   const handleSwitchExpert = async (newExpert: string) => {
+    // 清除错误状态
+    setError(null);
+    setRateLimited(false);
+
     // 关闭面板
     setExpertPanelOpen(false);
 
@@ -210,11 +240,20 @@ export default function ChatPageClient() {
     }
   };
 
+  // 清除错误并重试
+  const handleClearError = () => {
+    setError(null);
+    setRateLimited(false);
+  };
+
   // ---------- 渲染 ----------
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* 左侧：对话列表侧边栏 */}
-      <ChatSidebar />
+      {/* 左侧：对话列表侧边栏（含移动端抽屉支持） */}
+      <ChatSidebar
+        sidebarOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* 右侧：主聊天区域 */}
       <div className="flex flex-1 flex-col min-w-0">
@@ -222,7 +261,39 @@ export default function ChatPageClient() {
         <ChatHeader
           onOpenExpertPanel={() => setExpertPanelOpen(true)}
           expert={currentExpert}
+          onToggleSidebar={() => setSidebarOpen(true)}
         />
+
+        {/* 错误提示横幅（非消息型错误，如网络错误、限流等） */}
+        {error && (
+          <div className="mx-4 mt-3 flex items-center gap-3 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 lg:mx-6">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">
+                {rateLimited ? '发送太快' : '出错了'}
+              </p>
+              <p className="text-xs text-red-600">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearError}
+              className="flex-shrink-0 rounded-[8px] px-3 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+            >
+              关闭
+            </button>
+            {rateLimited && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleClearError();
+                  // 用户可以重新发送上一条用户消息
+                }}
+                className="flex-shrink-0 rounded-[8px] bg-[#FF7A59] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#FF7A59]/90"
+              >
+                重试
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 消息列表（含欢迎卡片） */}
         <MessageList

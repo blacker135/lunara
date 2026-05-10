@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { Providers } from '@/components/common/Providers';
 
 // 支持的语言类型
 type SupportedLocale = 'en' | 'zh';
@@ -41,7 +42,7 @@ export default async function LangLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      {children}
+      <Providers>{children}</Providers>
     </NextIntlClientProvider>
   );
 }

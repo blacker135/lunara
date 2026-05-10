@@ -49,3 +49,15 @@
   .bg-soft { background-color: var(--background); }
   .bg-surface { background-color: var(--surface); }
 }
+
+/* 移动端侧边栏滑入动画 */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@layer utilities {
+  .animate-slide-in-left {
+    animation: slideInLeft 0.25s ease-out;
+  }
+}

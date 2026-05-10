@@ -2,6 +2,7 @@
 // components/chat/ChatHeader.tsx — 聊天页顶部导航栏
 // ============================================================
 // 客户端组件，包含：
+//   - 移动端汉堡菜单按钮（lg:hidden）
 //   - 专家切换按钮（颜色圆点 + 名称 + ▾ 箭头）
 //   - 语言切换按钮（/en ↔ /zh）
 //   - 深色模式切换（☀️ / 🌙 toggle）
@@ -20,6 +21,8 @@ interface ChatHeaderProps {
   onOpenExpertPanel: () => void;
   /** 当前专家标识符 */
   expert: string;
+  /** 移动端切换侧边栏的回调 */
+  onToggleSidebar?: () => void;
 }
 
 /** 专家名称映射（简短显示名） */
@@ -33,8 +36,13 @@ const EXPERT_SHORT_NAMES: Record<string, string> = {
 /**
  * ChatHeader — 聊天页顶部导航栏
  * 显示当前专家、语言切换和深色模式按钮
+ * 移动端显示汉堡菜单按钮用于打开侧边栏
  */
-export function ChatHeader({ onOpenExpertPanel, expert }: ChatHeaderProps) {
+export function ChatHeader({
+  onOpenExpertPanel,
+  expert,
+  onToggleSidebar,
+}: ChatHeaderProps) {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
 
@@ -58,30 +66,55 @@ export function ChatHeader({ onOpenExpertPanel, expert }: ChatHeaderProps) {
 
   // ---------- 渲染 ----------
   return (
-    <header className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-3">
-      {/* 左侧：专家切换按钮 */}
-      <button
-        type="button"
-        onClick={onOpenExpertPanel}
-        className="flex items-center gap-2 rounded-[14px] border border-gray-200 bg-[#FAF7F2] px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-100"
-      >
-        {/* 专家颜色圆点 */}
-        <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: meta.color }}
-        />
-        <span>{expertName}</span>
-        {/* 下拉箭头指示 */}
-        <svg
-          className="ml-1 h-3 w-3 text-text-secondary"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+    <header className="flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3 lg:px-6">
+      {/* 左侧：汉堡菜单按钮（仅移动端） + 专家切换按钮 */}
+      <div className="flex items-center gap-2">
+        {/* 汉堡菜单按钮 — 仅移动端显示 */}
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="rounded-[8px] p-2 text-[#777777] transition-colors hover:bg-gray-100 lg:hidden"
+          aria-label="Open sidebar menu"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+
+        {/* 专家切换按钮 */}
+        <button
+          type="button"
+          onClick={onOpenExpertPanel}
+          className="flex items-center gap-2 rounded-[14px] border border-gray-200 bg-[#FAF7F2] px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-gray-100 lg:px-4"
+        >
+          {/* 专家颜色圆点 */}
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: meta.color }}
+          />
+          <span>{expertName}</span>
+          {/* 下拉箭头指示 */}
+          <svg
+            className="ml-1 h-3 w-3 text-text-secondary"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      </div>
 
       {/* 右侧：语言切换 + 深色模式 */}
       <div className="flex items-center gap-2">
