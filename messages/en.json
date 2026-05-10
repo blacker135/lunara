@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Lunara — AI Emotional Guidance",
-    "description": "AI emotional guidance for modern relationships. Talk with experts who understand love, communication, anxiety, attachment, and connection.",
+    "title": "Lunara — AI Relationship Guidance",
+    "description": "Focused on building, maintaining, growing, and saving love relationships. Four AI experts, four perspectives, guiding you through every stage of love.",
     "siteName": "Lunara"
   },
 
@@ -11,35 +11,36 @@
     "chat": "Chat",
     "language": "Language",
     "login": "Sign In",
-    "signup": "Get Started"
+    "signup": "Get Started",
+    "startChat": "Start Chat",
+    "logout": "Logout"
   },
 
   "hero": {
-    "badge": "AI Emotional Guidance",
+    "badge": "AI Relationship Guidance",
     "title": "Relationships are complicated. You don't have to figure them out alone.",
-    "subtitle": "AI emotional guidance for modern relationships. Ask anything about love, communication, anxiety, attachment, or connection.",
-    "cta": "Talk with Liam",
-    "ctaSubtext": "Free to start. No registration needed."
+    "subtitle": "Focused on building, maintaining, growing, and saving love relationships — four AI experts, four perspectives, guiding you through every stage of love.",
+    "cta": "Talk with Liam"
   },
 
   "trust": {
-    "title": "A space where you feel understood",
+    "title": "From building to saving — guiding your love relationship every step of the way",
     "items": [
       {
-        "title": "Psychology-Based Guidance",
-        "description": "Grounded in attachment theory, CBT frameworks, and relationship psychology research."
+        "title": "Build — Relationship Foundations",
+        "description": "Build security, trust, and healthy communication patterns. Lay a solid foundation for your love to grow."
       },
       {
-        "title": "100% Anonymous & Private",
-        "description": "No personal data stored. Your conversations belong only to you."
+        "title": "Maintain — Daily Nurturing",
+        "description": "Daily emotional care that keeps your relationship warm, connected, and resilient — before small cracks become big breaks."
       },
       {
-        "title": "Emotional Safe Space",
-        "description": "No judgment. No shame. Just honest, compassionate guidance."
+        "title": "Grow — Attraction & Escalation",
+        "description": "Understand attraction dynamics, navigate ambiguity, and move your relationship forward with confidence and authenticity."
       },
       {
-        "title": "Millions of Conversations Analyzed",
-        "description": "Trained on real relationship patterns across diverse experiences."
+        "title": "Save — Crisis & Recovery",
+        "description": "When trust breaks, cold wars set in, or breakup looms — think clearly, find direction, and rebuild from strength."
       }
     ]
   },
@@ -171,7 +172,7 @@
     "items": [
       {
         "question": "Is Lunara a real therapist?",
-        "answer": "Lunara is an AI emotional guidance platform, not a licensed therapist. Our experts are AI personas trained on relationship psychology frameworks. They provide compassionate guidance and perspective — not clinical diagnosis or treatment."
+        "answer": "Lunara is an AI relationship guidance platform, not a licensed therapist. Our experts are AI personas trained on relationship psychology frameworks. They provide compassionate guidance and perspective — not clinical diagnosis or treatment."
       },
       {
         "question": "Is my conversation really private?",
@@ -182,12 +183,8 @@
         "answer": "Absolutely. You can switch between Evan, Liam, Noah, and Dr. Cole at any time during your conversation. Each brings a different perspective, and you can explore all four."
       },
       {
-        "question": "Is Lunara free?",
-        "answer": "Lunara offers free access to get started. We believe emotional guidance should be accessible to everyone. Premium features may be introduced in the future to support ongoing development."
-      },
-      {
         "question": "What kind of relationship issues can I talk about?",
-        "answer": "You can talk about anything related to relationships: communication struggles, attachment anxiety, mixed signals, trust issues, conflict patterns, emotional distance, breakups, and more. All relationship types and situations are welcome."
+        "answer": "You can talk about anything related to love relationships: communication struggles, attachment anxiety, mixed signals, trust issues, conflict patterns, emotional distance, breakups, and more. All relationship types and situations are welcome."
       }
     ]
   },
