@@ -1,14 +1,33 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+@theme {
+  --color-primary: #FF7A59;
+  --color-background: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-accent: #B8C0FF;
+  --color-text-primary: #2B2B2B;
+  --color-text-secondary: #777777;
+  --color-expert-evan: #4A90D9;
+  --color-expert-liam: #5BA88C;
+  --color-expert-noah: #D4A843;
+  --color-expert-adrian: #C45C5C;
+  --radius-btn: 16px;
+  --radius-card: 24px;
+  --radius-input: 18px;
+  --radius-container: 32px;
+  --shadow-soft: 0 10px 40px rgba(0,0,0,0.06);
+  --font-family-sans: 'Inter', 'SF Pro Display', 'PingFang SC', 'HarmonyOS Sans', sans-serif;
+}
+
 @layer base {
   :root {
-    --background: #FAF7F2;
-    --surface: #FFFFFF;
-    --primary: #FF7A59;
-    --accent: #B8C0FF;
-    --text-primary: #2B2B2B;
-    --text-secondary: #777777;
+    --background: var(--color-background);
+    --surface: var(--color-surface);
+    --primary: var(--color-primary);
+    --accent: var(--color-accent);
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
   }
 
   .dark {
@@ -21,7 +40,7 @@
   body {
     background-color: var(--background);
     color: var(--text-primary);
-    font-family: 'Inter', 'SF Pro Display', 'PingFang SC', sans-serif;
+    font-family: var(--font-family-sans);
   }
 }
 
