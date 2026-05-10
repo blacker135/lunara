@@ -27,7 +27,11 @@ export function AuthForm() {
         if (error) {
           setMessage({ type: 'error', text: error.message || 'Sign up failed' });
         } else {
-          setMessage({ type: 'success', text: 'Account created! You can now sign in.' });
+          setMessage({ type: 'success', text: 'Account created! Redirecting to sign in...' });
+          setTimeout(() => {
+            setIsSignUp(false);
+            setMessage(null);
+          }, 1500);
         }
       } else {
         const { error } = await authClient.signIn.email({ email, password });
