@@ -38,6 +38,7 @@ export function AuthForm() {
         }
       }
     } catch (err) {
+      console.error('AuthForm submit error:', err);
       setMessage({ type: 'error', text: 'An unexpected error occurred. Please try again.' });
     } finally {
       setLoading(false);
