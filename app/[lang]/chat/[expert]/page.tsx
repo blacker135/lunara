@@ -49,6 +49,7 @@ export default function ChatPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
 
   // ---------- 处理 URL 预填问题 ----------
   useEffect(() => {
@@ -149,6 +150,7 @@ export default function ChatPageClient() {
               // 处理 conversation_id — 服务端通过 SSE 首条事件返回
               if (parsed.conversation_id) {
                 setConversationId(parsed.conversation_id);
+                setSidebarRefreshKey((k) => k + 1); // 触发侧边栏刷新
                 continue;
               }
               if (parsed.content) {
@@ -258,6 +260,7 @@ export default function ChatPageClient() {
       <ChatSidebar
         sidebarOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        refreshKey={sidebarRefreshKey}
       />
 
       {/* 右侧：主聊天区域 */}

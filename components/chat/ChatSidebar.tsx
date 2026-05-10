@@ -34,6 +34,8 @@ interface ChatSidebarProps {
   sidebarOpen?: boolean;
   /** 移动端关闭侧边栏的回调 */
   onClose?: () => void;
+  /** 递增此值触发对话列表重新加载 */
+  refreshKey?: number;
 }
 
 /**
@@ -41,7 +43,7 @@ interface ChatSidebarProps {
  * 使用 useTranslations('chat') 获取翻译文本
  * 支持桌面端固定显示 + 移动端滑入抽屉
  */
-export function ChatSidebar({ sidebarOpen = false, onClose }: ChatSidebarProps) {
+export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: ChatSidebarProps) {
   const t = useTranslations('chat');
   const router = useRouter();
   const pathname = usePathname();
@@ -68,7 +70,7 @@ export function ChatSidebar({ sidebarOpen = false, onClose }: ChatSidebarProps) 
     };
 
     loadConversations();
-  }, []);
+  }, [refreshKey]);
 
   // ---------- 格式化日期显示 ----------
   const formatDate = (dateStr: string) => {
