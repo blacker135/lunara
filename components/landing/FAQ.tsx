@@ -1,7 +1,7 @@
 /**
  * FAQ 手风琴式常见问题组件
  *
- * 展示 5 个手风琴样式的常见问题。
+ * 展示 4 个手风琴样式的常见问题。
  * 包含：
  * - 区域标题
  * - 手风琴列表，使用 useState 管理展开索引
@@ -24,8 +24,8 @@ export function FAQ() {
   const t = useTranslations('faq');
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  // 从 i18n messages 获取 5 个常见问题
-  const items = [0, 1, 2, 3, 4].map((i) => ({
+  // 从 i18n messages 获取常见问题列表
+  const items = [0, 1, 2, 3].map((i) => ({
     question: t(`items.${i}.question`),
     answer: t(`items.${i}.answer`),
   }));
