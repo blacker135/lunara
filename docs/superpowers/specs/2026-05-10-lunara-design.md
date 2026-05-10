@@ -165,7 +165,7 @@ Client Components。布局：左历史侧边栏 + 中对话区。进入对话默
 | `<MessageList />` | 消息列表，首次进入显示 WelcomeCard |
 | `<WelcomeCard />` | 当前专家自我介绍 + 3 个建议问题（根据语言动态显示） |
 | `<MessageBubble />` | 消息气泡，assistant 侧打字动画 |
-| `<ChatInput />` | 大圆角输入框 + 专家下拉选择器 + 发送按钮 |
+| `<ChatInput />` | 大圆角输入框 + 发送按钮（专家切换统一由 Header 面板触发）|
 
 ### 路由说明
 
