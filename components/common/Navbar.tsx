@@ -13,7 +13,7 @@ export async function Navbar({ lang }: NavbarProps) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   const user = session?.user
-    ? { name: session.user.name ?? undefined, email: session.user.email }
+    ? { name: session.user.name, email: session.user.email }
     : null;
 
   return <NavbarClient lang={lang} user={user} />;
