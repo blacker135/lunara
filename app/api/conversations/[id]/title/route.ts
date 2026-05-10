@@ -1,34 +1,21 @@
-// ============================================================
-// PATCH /api/conversations/[id]/title — 更新对话标题
-// ============================================================
-// 功能：
-//   1. 验证 JWT
-//   2. 验证对话归属
-//   3. 更新 title 字段
-// ============================================================
+// PATCH /api/conversations/[id]/title
 
-import { createServerSupabase } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { db, schema } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
-// ------------------------------------------------------------
-// PATCH /api/conversations/[id]/title — 主处理函数
-// ------------------------------------------------------------
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // === 第一步：身份验证 ===
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { id } = await params;
 
-  // === 第二步：解析请求体 ===
   let body: { title?: string };
   try {
     body = await request.json();
@@ -36,49 +23,27 @@ export async function PATCH(
     return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // 校验 title 字段
   if (!body.title || typeof body.title !== 'string' || body.title.trim().length === 0) {
-    return Response.json(
-      { error: 'Title is required and must be a non-empty string' },
-      { status: 400 },
-    );
+    return Response.json({ error: 'Title is required' }, { status: 400 });
   }
 
-  const newTitle = body.title.trim();
+  const [conversation] = await db
+    .select({ id: schema.conversations.id, userId: schema.conversations.userId })
+    .from(schema.conversations)
+    .where(eq(schema.conversations.id, id));
 
-  // === 第三步：验证对话归属 ===
-  const { data: conversation, error: convError } = await supabase
-    .from('conversations')
-    .select('id, user_id')
-    .eq('id', id)
-    .single();
-
-  if (convError || !conversation) {
-    return Response.json(
-      { error: 'Conversation not found' },
-      { status: 404 },
-    );
+  if (!conversation) {
+    return Response.json({ error: 'Conversation not found' }, { status: 404 });
   }
-
-  if (conversation.user_id !== user.id) {
+  if (conversation.userId !== session.user.id) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // === 第四步：更新标题 ===
-  const { data: updated, error: updateError } = await supabase
-    .from('conversations')
-    .update({ title: newTitle, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select('id, expert, title, language, updated_at, created_at')
-    .single();
-
-  if (updateError || !updated) {
-    console.error('Failed to update title:', updateError);
-    return Response.json(
-      { error: 'Failed to update title' },
-      { status: 500 },
-    );
-  }
+  const [updated] = await db
+    .update(schema.conversations)
+    .set({ title: body.title.trim(), updatedAt: new Date() })
+    .where(eq(schema.conversations.id, id))
+    .returning();
 
   return Response.json({ conversation: updated });
 }
