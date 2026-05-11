@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     let cleanedPro = 0;
     let cleanedUnsub = 0;
 
-    // Starter: 删除 7 天前的消息
+    // Starter: 批量删除 7 天前的消息
     if (starterUserIds.length > 0) {
       const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const convs = await db
@@ -57,20 +57,21 @@ export async function GET(request: Request) {
         .from(schema.conversations)
         .where(inArray(schema.conversations.userId, starterUserIds));
 
-      for (const conv of convs) {
+      const convIds = convs.map((c) => c.id);
+      if (convIds.length > 0) {
         const result = await db
           .delete(schema.messages)
           .where(
             and(
-              eq(schema.messages.conversationId, conv.id),
+              inArray(schema.messages.conversationId, convIds),
               lte(schema.messages.createdAt, cutoff),
             ),
           );
-        cleanedStarter += (result.rowCount || 0);
+        cleanedStarter = result.rowCount || 0;
       }
     }
 
-    // Pro: 删除 30 天前的消息
+    // Pro: 批量删除 30 天前的消息
     if (proUserIds.length > 0) {
       const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const convs = await db
@@ -78,58 +79,44 @@ export async function GET(request: Request) {
         .from(schema.conversations)
         .where(inArray(schema.conversations.userId, proUserIds));
 
-      for (const conv of convs) {
+      const convIds = convs.map((c) => c.id);
+      if (convIds.length > 0) {
         const result = await db
           .delete(schema.messages)
           .where(
             and(
-              eq(schema.messages.conversationId, conv.id),
+              inArray(schema.messages.conversationId, convIds),
               lte(schema.messages.createdAt, cutoff),
             ),
           );
-        cleanedPro += (result.rowCount || 0);
+        cleanedPro = result.rowCount || 0;
       }
     }
 
-    // 未订阅用户: 删除 7 天前的消息
+    // 未订阅用户: 批量删除 7 天前的消息
     const allSubUserIds = activeSubs.map((s) => s.userId);
-    const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const unsubCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    if (allSubUserIds.length > 0) {
-      // 排除所有有活跃订阅的用户（包括 Ultra，因为 Ultra 不清理）
-      const convs = await db
-        .select({ id: schema.conversations.id })
-        .from(schema.conversations)
-        .where(notInArray(schema.conversations.userId, allSubUserIds));
+    const unsubConvs = allSubUserIds.length > 0
+      ? await db
+          .select({ id: schema.conversations.id })
+          .from(schema.conversations)
+          .where(notInArray(schema.conversations.userId, allSubUserIds))
+      : await db
+          .select({ id: schema.conversations.id })
+          .from(schema.conversations);
 
-      for (const conv of convs) {
-        const result = await db
-          .delete(schema.messages)
-          .where(
-            and(
-              eq(schema.messages.conversationId, conv.id),
-              lte(schema.messages.createdAt, cutoff),
-            ),
-          );
-        cleanedUnsub += (result.rowCount || 0);
-      }
-    } else {
-      // 没有活跃订阅用户时，所有用户都是未订阅用户
-      const convs = await db
-        .select({ id: schema.conversations.id })
-        .from(schema.conversations);
-
-      for (const conv of convs) {
-        const result = await db
-          .delete(schema.messages)
-          .where(
-            and(
-              eq(schema.messages.conversationId, conv.id),
-              lte(schema.messages.createdAt, cutoff),
-            ),
-          );
-        cleanedUnsub += (result.rowCount || 0);
-      }
+    const unsubConvIds = unsubConvs.map((c) => c.id);
+    if (unsubConvIds.length > 0) {
+      const result = await db
+        .delete(schema.messages)
+        .where(
+          and(
+            inArray(schema.messages.conversationId, unsubConvIds),
+            lte(schema.messages.createdAt, unsubCutoff),
+          ),
+        );
+      cleanedUnsub = result.rowCount || 0;
     }
 
     return Response.json({
