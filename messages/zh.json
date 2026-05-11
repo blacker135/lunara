@@ -289,6 +289,26 @@
       "effectLight": "轻量指导",
       "effectStandard": "标准深度",
       "effectDeep": "深度专注指导"
-    }
+    },
+    "monthlyEquivalent": "折合 ${{price}}/月",
+    "savePerYear": "比月付省 ${{amount}}/年",
+    "testPlanName": "测试方案",
+    "testPlanCTA": "测试支付 ($0.01)",
+    "oneTime": "一次性付费",
+    "validDays": "{{days}} 天有效"
+  },
+  "membership": {
+    "upgrade": "升级",
+    "expires": "到期：{{date}}",
+    "oneTimeExpires": "有效至：{{date}}",
+    "benefitMessages": "每日 {{count}} 条消息",
+    "benefitUnlimitedMessages": "消息无限制",
+    "benefitExperts": "Evan & Liam",
+    "benefitExpertsAll": "全部 4 位专家",
+    "benefitHistoryDays": "{{count}} 天对话历史",
+    "benefitHistoryForever": "无限对话历史",
+    "benefitDepthLight": "轻量指导",
+    "benefitDepthStandard": "标准深度",
+    "benefitDepthDeep": "深度专注指导"
   }
 }

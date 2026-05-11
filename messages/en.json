@@ -289,6 +289,26 @@
       "effectLight": "Light guidance",
       "effectStandard": "Standard depth",
       "effectDeep": "Deep, focused guidance"
-    }
+    },
+    "monthlyEquivalent": "${{price}}/mo equivalent",
+    "savePerYear": "Save ${{amount}}/yr vs monthly",
+    "testPlanName": "Test Plan",
+    "testPlanCTA": "Test Pay ($0.01)",
+    "oneTime": "One-time payment",
+    "validDays": "Valid {{days}} days"
+  },
+  "membership": {
+    "upgrade": "Upgrade",
+    "expires": "Expires: {{date}}",
+    "oneTimeExpires": "Valid until: {{date}}",
+    "benefitMessages": "{{count}} messages / day",
+    "benefitUnlimitedMessages": "Unlimited messages",
+    "benefitExperts": "Evan & Liam",
+    "benefitExpertsAll": "All 4 experts",
+    "benefitHistoryDays": "{{count}}-day chat history",
+    "benefitHistoryForever": "Unlimited chat history",
+    "benefitDepthLight": "Light guidance",
+    "benefitDepthStandard": "Standard depth",
+    "benefitDepthDeep": "Deep, focused guidance"
   }
 }
