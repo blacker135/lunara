@@ -22,6 +22,14 @@ export async function POST(request: Request) {
     return Response.json({ error: 'variant_id is required' }, { status: 400 });
   }
 
+  // 验证 redirect_url 必须指向自身域名，防止开放重定向攻击
+  if (body.redirect_url) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl || !body.redirect_url.startsWith(appUrl)) {
+      return Response.json({ error: 'Invalid redirect_url' }, { status: 400 });
+    }
+  }
+
   try {
     const url = await createCheckout(body.variant_id, session.user.id, body.redirect_url);
     return Response.json({ url });
