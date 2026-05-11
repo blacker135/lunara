@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { db, schema } from '@/lib/db';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and, gte, count } from 'drizzle-orm';
 import { createDeepSeekClient } from '@/lib/deepseek/client';
 import { getExpertPrompt } from '@/lib/prompts/experts';
 import type { ExpertId, Language } from '@/lib/prompts/experts';
@@ -32,6 +32,29 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
+  // ---------- 订阅门控：检查试用剩余 ----------
+  const [profile] = await db
+    .select({ trialUsed: schema.profiles.trialUsed })
+    .from(schema.profiles)
+    .where(eq(schema.profiles.userId, session.user.id));
+
+  const trialUsed = profile?.trialUsed || 0;
+
+  const [subscription] = await db
+    .select({ variant: schema.subscriptions.variantName, status: schema.subscriptions.status })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.userId, session.user.id));
+
+  const isSubscribed = subscription && subscription.status === 'active';
+  const variant = subscription?.variant || null;
+
+  if (!isSubscribed && trialUsed >= 3) {
+    return Response.json({
+      error: 'Trial exhausted',
+      code: 'TRIAL_EXHAUSTED',
+    }, { status: 402 });
+  }
+
   let body: { conversation_id?: string; expert?: string; message?: string; language?: string };
   try {
     body = await request.json();
@@ -49,6 +72,45 @@ export async function POST(request: Request) {
   const validLanguages: Language[] = ['en', 'zh'];
   if (!language || !validLanguages.includes(language as Language)) {
     return Response.json({ error: 'Invalid language' }, { status: 400 });
+  }
+
+  // ---------- Starter 专家限制：仅开放 Evan 和 Liam ----------
+  if (isSubscribed && variant === 'starter') {
+    const starterExperts: ExpertId[] = ['evan', 'liam'];
+    if (!starterExperts.includes(expert as ExpertId)) {
+      return Response.json({
+        error: 'Expert locked',
+        code: 'EXPERT_LOCKED',
+        message: 'Upgrade to Pro or Ultra to unlock all experts.',
+      }, { status: 403 });
+    }
+  }
+
+  // ---------- 日消息量限额 ----------
+  if (isSubscribed && (variant === 'starter' || variant === 'pro')) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(schema.messages)
+      .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
+      .where(
+        and(
+          eq(schema.conversations.userId, session.user.id),
+          eq(schema.messages.role, 'user'),
+          gte(schema.messages.createdAt, todayStart),
+        ),
+      );
+
+    const dailyLimit = variant === 'starter' ? 30 : 100;
+    if ((result?.count || 0) >= dailyLimit) {
+      return Response.json({
+        error: 'Daily message limit reached',
+        code: 'DAILY_LIMIT',
+        message: `You've reached the daily limit of ${dailyLimit} messages.`,
+      }, { status: 429 });
+    }
   }
 
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -118,10 +180,18 @@ export async function POST(request: Request) {
           encoder.encode(`data: ${JSON.stringify({ conversation_id: conversationId })}\n\n`)
         );
 
+        // 根据订阅方案设置 AI 回复深度
+        const maxTokensByVariant: Record<string, number> = {
+          starter: 512,
+          pro: 1024,
+          ultra: 2048,
+        };
+        const maxTokens = variant ? (maxTokensByVariant[variant] || 1024) : 512;
+
         const stream = await deepseek.chat.completions.create({
           model: 'deepseek-chat',
           messages: chatMessages,
-          max_tokens: 1024,
+          max_tokens: maxTokens,
           temperature: 0.8,
           stream: true,
         });
