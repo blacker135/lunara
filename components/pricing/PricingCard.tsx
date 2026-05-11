@@ -33,8 +33,10 @@ export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, variantId,
   // 年付比月付节省的百分比
   const savePercent = Math.round((1 - plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100);
 
-  // 展示价格：年付显示折算月费，月付显示月费
-  const displayPrice = isYearly ? monthlyEquivalent : plan.monthlyPrice;
+  // 展示价格：年付显示折算月费，月付显示月费（非整数价格保留两位小数）
+  const displayPrice = isYearly ? monthlyEquivalent
+    : isTestPlan ? plan.monthlyPrice.toFixed(2)
+    : plan.monthlyPrice;
 
   const periodLabel = `/${tp('month')}`;
 

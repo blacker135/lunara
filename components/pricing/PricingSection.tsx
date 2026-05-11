@@ -153,8 +153,8 @@ export function PricingSection({ lang, isLoggedIn, isDomestic, showTestPlan, var
             plan={{
               id: 'test',
               name: tp('testPlanName'),
-              monthlyPrice: 0.01,
-              yearlyPrice: 0.01,
+              monthlyPrice: 0.5,
+              yearlyPrice: 0.5,
               features: [
                 tp('features.dailyMessages', { count: 30 }),
                 tp('features.expertsStarter'),
