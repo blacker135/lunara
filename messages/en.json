@@ -291,16 +291,14 @@
       "effectDeep": "Deep, focused guidance"
     },
     "monthlyEquivalent": "${{price}}/mo equivalent",
-    "savePerYear": "Save ${{amount}}/yr vs monthly",
+    "savePerYear": "Save {{percent}}%",
     "testPlanName": "Test Plan",
-    "testPlanCTA": "Test Pay ($0.01)",
-    "oneTime": "One-time payment",
-    "validDays": "Valid {{days}} days"
+    "testPlanCTA": "Test Pay ($0.01)"
   },
   "membership": {
     "upgrade": "Upgrade",
     "expires": "Expires: {{date}}",
-    "oneTimeExpires": "Valid until: {{date}}",
+
     "benefitMessages": "{{count}} messages / day",
     "benefitUnlimitedMessages": "Unlimited messages",
     "benefitExperts": "Evan & Liam",
