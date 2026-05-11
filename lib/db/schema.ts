@@ -107,6 +107,7 @@ export const profiles = pgTable('profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id')
     .notNull()
+    .unique()
     .references(() => user.id, { onDelete: 'cascade' }),
   nickname: text('nickname'),
   trialUsed: integer('trial_used').default(0), // 试用消息使用次数

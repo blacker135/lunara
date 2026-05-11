@@ -63,10 +63,19 @@ export async function POST(request: Request) {
       }
 
       if (!profile) {
-        await tx.insert(schema.profiles).values({
-          userId: session.user.id,
-          trialUsed: 1,
-        });
+        await tx.insert(schema.profiles)
+          .values({ userId: session.user.id, trialUsed: 1 })
+          .onConflictDoNothing();
+
+        // 并发场景下另一事务可能先插入，需重新读取
+        const [reProfile] = await tx
+          .select({ trialUsed: schema.profiles.trialUsed })
+          .from(schema.profiles)
+          .where(eq(schema.profiles.userId, session.user.id))
+          .for('update');
+
+        const actualTrialUsed = reProfile?.trialUsed ?? 1;
+        return { allowed: true, trialUsed: actualTrialUsed };
       } else {
         await tx
           .update(schema.profiles)
