@@ -11,24 +11,41 @@ interface PlanData {
   name: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  onetimePrice: number;  // 国内一次性买断价格
   features: string[];
   highlighted?: boolean;
+  validDays?: number; // 一次性买断的有效天数
 }
 
 interface PricingCardProps {
   plan: PlanData;
   isYearly: boolean;
+  isOneTime: boolean;   // 国内一次性买断模式
+  isTestPlan: boolean;   // $0.01 测试方案
   isLoggedIn: boolean;
   variantId: string;
   lang: string;
 }
 
-export function PricingCard({ plan, isYearly, isLoggedIn, variantId, lang }: PricingCardProps) {
+export function PricingCard({ plan, isYearly, isOneTime, isTestPlan, isLoggedIn, variantId, lang }: PricingCardProps) {
   const router = useRouter();
   const tp = useTranslations('pricing');
 
-  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-  const period = isYearly ? tp('year') : tp('month');
+  // 折算月费（年费 ÷ 12）
+  const monthlyEquivalent = (plan.yearlyPrice / 12).toFixed(2);
+  // 年付比月付节省的金额
+  const yearlySaving = plan.monthlyPrice * 12 - plan.yearlyPrice;
+
+  // 确定展示价格和周期
+  const displayPrice = isOneTime
+    ? plan.onetimePrice    // 国内：展示一次性买断价格
+    : isYearly
+      ? monthlyEquivalent  // 国外年付：展示折算月费
+      : plan.monthlyPrice; // 国外月付：展示月费
+
+  const periodLabel = isOneTime
+    ? ''                   // 一次性：无周期标注
+    : `/${tp('month')}`;
 
   /** 处理 CTA 按钮点击：未登录跳转登录页，已登录跳转 LemonSqueezy checkout */
   const handleCTA = async () => {
@@ -55,9 +72,11 @@ export function PricingCard({ plan, isYearly, isLoggedIn, variantId, lang }: Pri
   return (
     <div
       className={`flex flex-col rounded-[24px] border-2 p-6 ${
-        plan.highlighted
-          ? 'border-[#FF7A59] bg-[#FF7A59]/5'
-          : 'border-gray-100 bg-white'
+        isTestPlan
+          ? 'border-dashed border-gray-300 bg-white/60'
+          : plan.highlighted
+            ? 'border-[#FF7A59] bg-[#FF7A59]/5'
+            : 'border-gray-100 bg-white'
       }`}
     >
       {/* 方案名称 */}
@@ -65,13 +84,29 @@ export function PricingCard({ plan, isYearly, isLoggedIn, variantId, lang }: Pri
 
       {/* 价格展示 */}
       <div className="mt-4 flex items-baseline gap-1">
-        <span className="text-3xl font-bold text-text-primary">${price}</span>
-        <span className="text-sm text-text-secondary">/{period}</span>
+        <span className="text-3xl font-bold text-text-primary">${displayPrice}</span>
+        {periodLabel && (
+          <span className="text-sm text-text-secondary">{periodLabel}</span>
+        )}
       </div>
-      {isYearly && (
+
+      {/* 一次性付费标注 */}
+      {isOneTime && plan.validDays && (
         <p className="mt-1 text-xs text-[#FF7A59]">
-          {tp('yearlySave', { monthly: plan.monthlyPrice, yearly: plan.yearlyPrice })}
+          {tp('validDays', { days: plan.validDays })}
         </p>
+      )}
+
+      {/* 年付折算：显示年费总额 + 省钱标注 */}
+      {isYearly && !isOneTime && (
+        <div className="mt-1">
+          <p className="text-xs text-text-secondary">
+            ${plan.yearlyPrice}/{tp('year')}
+          </p>
+          <p className="text-xs text-[#FF7A59]">
+            {tp('savePerYear', { amount: yearlySaving })}
+          </p>
+        </div>
       )}
 
       {/* 功能列表 */}
@@ -102,7 +137,11 @@ export function PricingCard({ plan, isYearly, isLoggedIn, variantId, lang }: Pri
             : 'bg-[#FAF7F2] text-text-primary hover:bg-gray-100'
         }`}
       >
-        {isLoggedIn ? tp('subscribe') : tp('startTrial')}
+        {isTestPlan
+          ? tp('testPlanCTA')
+          : isLoggedIn
+            ? tp('subscribe')
+            : tp('startTrial')}
       </button>
     </div>
   );
