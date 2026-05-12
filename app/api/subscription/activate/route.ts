@@ -37,22 +37,33 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Unknown plan' }, { status: 400 });
     }
 
-    // upsert：先删再插，处理并发激活
+    // upsert：使用 onConflictDoUpdate 保证并发安全的原子操作
     await db
-      .delete(schema.subscriptions)
-      .where(eq(schema.subscriptions.paypalSubscriptionId, body.subscription_id));
-
-    await db.insert(schema.subscriptions).values({
-      userId: session.user.id,
-      paypalSubscriptionId: body.subscription_id,
-      paypalPlanId: body.plan_id,
-      variantName,
-      status: 'active',
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: sub.billing_info?.next_billing_time
-        ? new Date(sub.billing_info.next_billing_time)
-        : undefined,
-    });
+      .insert(schema.subscriptions)
+      .values({
+        userId: session.user.id,
+        paypalSubscriptionId: body.subscription_id,
+        paypalPlanId: body.plan_id,
+        variantName,
+        status: 'active',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: sub.billing_info?.next_billing_time
+          ? new Date(sub.billing_info.next_billing_time)
+          : undefined,
+      })
+      .onConflictDoUpdate({
+        target: schema.subscriptions.paypalSubscriptionId,
+        set: {
+          paypalPlanId: body.plan_id,
+          variantName,
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: sub.billing_info?.next_billing_time
+            ? new Date(sub.billing_info.next_billing_time)
+            : undefined,
+          updatedAt: new Date(),
+        },
+      });
 
     return Response.json({ success: true, variant: variantName });
   } catch (err) {

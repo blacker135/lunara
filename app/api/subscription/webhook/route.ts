@@ -79,7 +79,13 @@ export async function POST(request: Request) {
       case 'BILLING.SUBSCRIPTION.UPDATED': {
         const updates: Record<string, unknown> = {};
         if (eventStatus) {
-          updates.status = eventStatus === 'ACTIVE' ? 'active' : 'cancelled';
+          const statusMap: Record<string, string> = {
+            ACTIVE: 'active',
+            SUSPENDED: 'cancelled',
+            CANCELLED: 'cancelled',
+            EXPIRED: 'expired',
+          };
+          updates.status = statusMap[eventStatus] || 'cancelled';
         }
         if (nextBilling) updates.currentPeriodEnd = new Date(nextBilling);
         updates.updatedAt = new Date();

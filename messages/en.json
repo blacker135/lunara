@@ -364,7 +364,7 @@
       "sections": [
         {
           "heading": "1. Information We Collect",
-          "body": "Account Information: When you sign up, we collect your email address and authentication credentials. These are managed through our authentication provider and we do not have access to your password.\n\nUsage Data: We collect information about your interactions with the Service, including expert selections, message timestamps, and subscription status. We do not store the content of your conversations on our servers.\n\nPayment Information: Payment processing is handled by our payment providers (Lemon Squeezy). We do not collect or store your full credit card details."
+          "body": "Account Information: When you sign up, we collect your email address and authentication credentials. These are managed through our authentication provider and we do not have access to your password.\n\nUsage Data: We collect information about your interactions with the Service, including expert selections, message timestamps, and subscription status. We do not store the content of your conversations on our servers.\n\nPayment Information: Payment processing is handled by our payment providers (PayPal). We do not collect or store your full credit card details."
         },
         {
           "heading": "2. How We Use Your Information",
@@ -380,7 +380,7 @@
         },
         {
           "heading": "5. Third-Party Services",
-          "body": "We use third-party services for authentication (Better Auth), payment processing (Lemon Squeezy), hosting (Vercel), and database services (Supabase/PostgreSQL). These providers have their own privacy policies and data handling practices. We encourage you to review their policies."
+          "body": "We use third-party services for authentication (Better Auth), payment processing (PayPal), hosting (Vercel), and database services (Supabase/PostgreSQL). These providers have their own privacy policies and data handling practices. We encourage you to review their policies."
         },
         {
           "heading": "6. Your Rights",
