@@ -11,6 +11,11 @@ import {
   integer,
   pgEnum,
   index,
+  date,
+  numeric,
+  smallint,
+  jsonb,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 // ============================================================
@@ -136,4 +141,60 @@ export const messages = pgTable('messages', {
 }, (table) => ({
   conversationIdx: index('idx_messages_conversation').on(table.conversationId),
   conversationCreatedIdx: index('idx_messages_conv_created').on(table.conversationId, table.createdAt),
+}));
+
+// ============================================================
+// 数据统计引擎 — 原始事件流水
+// ============================================================
+
+export const analyticsEvents = pgTable('analytics_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventType: text('event_type').notNull(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  payload: jsonb('payload').default({}),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  typeCreatedIdx: index('idx_events_type_created').on(table.eventType, table.createdAt),
+}));
+
+// ============================================================
+// 日级聚合统计
+// ============================================================
+
+export const analyticsDailyStats = pgTable('analytics_daily_stats', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  date: date('date').notNull(),
+  metricKey: text('metric_key').notNull(),
+  metricValue: numeric('metric_value').notNull().default('0'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  dateKeyUnique: uniqueIndex('idx_daily_stats_date_key').on(table.date, table.metricKey),
+}));
+
+// ============================================================
+// 月级聚合统计
+// ============================================================
+
+export const analyticsMonthlyStats = pgTable('analytics_monthly_stats', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  yearMonth: text('year_month').notNull(),
+  metricKey: text('metric_key').notNull(),
+  metricValue: numeric('metric_value').notNull().default('0'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  ymKeyUnique: uniqueIndex('idx_monthly_stats_ym_key').on(table.yearMonth, table.metricKey),
+}));
+
+// ============================================================
+// 留存率快照
+// ============================================================
+
+export const analyticsRetention = pgTable('analytics_retention', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cohortDate: date('cohort_date').notNull(),
+  dayN: smallint('day_n').notNull(),
+  retentionRate: numeric('retention_rate').notNull().default('0'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  cohortDayUnique: uniqueIndex('idx_retention_cohort_day').on(table.cohortDate, table.dayN),
 }));
