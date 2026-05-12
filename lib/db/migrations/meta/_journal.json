@@ -29,6 +29,20 @@
       "when": 1778491100452,
       "tag": "0003_organic_guardsmen",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778491200452,
+      "tag": "0004_paypal_rename",
+      "breakpoints": false
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778600584806,
+      "tag": "0005_analytics_tables",
+      "breakpoints": true
     }
   ]
 }
