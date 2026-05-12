@@ -1,124 +1,99 @@
 // app/api/subscription/webhook/route.ts
-// POST /api/subscription/webhook — 接收 LemonSqueezy 事件回调，同步订阅状态
+// POST /api/subscription/webhook — 接收 PayPal 订阅事件回调
 
 import { db, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import { verifyWebhookSignature, getVariantName } from '@/lib/lemonsqueezy';
+import { verifyWebhookSignature, getVariantName } from '@/lib/paypal';
 
-interface LSEvent {
-  meta: {
-    event_name: string;
-    custom_data?: { user_id?: string };
-  };
-  data: {
+interface PayPalWebhookEvent {
+  event_type: string;
+  resource: {
     id: string;
-    attributes: {
-      customer_id?: number;
-      variant_id?: number;
-      status?: string;
-      renews_at?: string;
-      created_at?: string;
-      ends_at?: string;
-      cancelled?: boolean;
-      order_id?: number;         // 订单 ID
-      first_order_item?: {       // 订阅的首个订单项
-        order_id?: number;
-      };
+    plan_id?: string;
+    status?: string;
+    billing_info?: {
+      next_billing_time?: string;
     };
+    create_time?: string;
   };
 }
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
-  const signature = request.headers.get('X-Signature') || '';
 
-  if (!verifyWebhookSignature(rawBody, signature)) {
+  const signatureHeaders: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    signatureHeaders[key.toLowerCase()] = value;
+  });
+
+  const verified = await verifyWebhookSignature(signatureHeaders, rawBody);
+  if (!verified) {
     return Response.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  let event: LSEvent;
+  let event: PayPalWebhookEvent;
   try {
     event = JSON.parse(rawBody);
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const eventName = event.meta.event_name;
-  const userId = event.meta.custom_data?.user_id;
-  const subId = event.data.id;
-  const variantId = String(event.data.attributes.variant_id || '');
-  const status = event.data.attributes.status;
-  const renewsAt = event.data.attributes.renews_at;
-  const createdAt = event.data.attributes.created_at;
-  const cancelled = event.data.attributes.cancelled;
-  const customerId = event.data.attributes.customer_id;
-  const orderId = event.data.attributes.order_id
-    || event.data.attributes.first_order_item?.order_id;
-
-  const variantName = getVariantName(variantId);
+  const eventType = event.event_type;
+  const subId = event.resource.id;
+  const planId = event.resource.plan_id || '';
+  const eventStatus = event.resource.status;
+  const nextBilling = event.resource.billing_info?.next_billing_time;
 
   try {
-    switch (eventName) {
-      case 'subscription_created': {
-        if (!userId || !variantName) break;
-        // 先删再插，处理重复 webhook
-        await db.delete(schema.subscriptions).where(eq(schema.subscriptions.lemonSqueezySubscriptionId, subId));
-        await db.insert(schema.subscriptions).values({
-          userId,
-          lemonSqueezySubscriptionId: subId,
-          lemonSqueezyVariantId: variantId,
-          variantName: variantName as 'starter' | 'pro' | 'ultra',
-          status: status === 'active' ? 'active' : 'cancelled',
-          currentPeriodStart: createdAt ? new Date(createdAt) : undefined,
-          currentPeriodEnd: renewsAt ? new Date(renewsAt) : undefined,
-          lemonSqueezyCustomerId: customerId ? String(customerId) : undefined,
-          lemonSqueezyOrderId: orderId ? String(orderId) : undefined,
-        });
+    switch (eventType) {
+      case 'BILLING.SUBSCRIPTION.ACTIVATED': {
+        // activate API 已插入记录，webhook 只做状态确认更新
+        await db
+          .update(schema.subscriptions)
+          .set({
+            status: 'active',
+            currentPeriodEnd: nextBilling ? new Date(nextBilling) : undefined,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.subscriptions.paypalSubscriptionId, subId));
         break;
       }
 
-      case 'subscription_updated': {
-        const updates: Record<string, any> = {};
-        if (status) updates.status = status === 'active' ? 'active' : status === 'cancelled' ? 'cancelled' : 'expired';
-        if (renewsAt) updates.currentPeriodEnd = new Date(renewsAt);
-        if (cancelled !== undefined) updates.cancelAtPeriodEnd = cancelled;
-        // 升级/降级时更新 variant
-        if (variantId) {
-          updates.lemonSqueezyVariantId = variantId;
-          if (variantName) updates.variantName = variantName;
+      case 'BILLING.SUBSCRIPTION.CANCELLED':
+      case 'BILLING.SUBSCRIPTION.EXPIRED':
+      case 'BILLING.SUBSCRIPTION.PAYMENT_FAILED': {
+        const newStatus =
+          eventType === 'BILLING.SUBSCRIPTION.EXPIRED' ? 'expired' : 'cancelled';
+
+        await db
+          .update(schema.subscriptions)
+          .set({ status: newStatus, updatedAt: new Date() })
+          .where(eq(schema.subscriptions.paypalSubscriptionId, subId));
+
+        if (eventType === 'BILLING.SUBSCRIPTION.PAYMENT_FAILED') {
+          console.error('[PayPal Webhook] Payment failed:', { subId, planId });
         }
+        break;
+      }
+
+      case 'BILLING.SUBSCRIPTION.UPDATED': {
+        const updates: Record<string, unknown> = {};
+        if (eventStatus) {
+          const statusMap: Record<string, string> = {
+            ACTIVE: 'active',
+            SUSPENDED: 'cancelled',
+            CANCELLED: 'cancelled',
+            EXPIRED: 'expired',
+          };
+          updates.status = statusMap[eventStatus] || 'cancelled';
+        }
+        if (nextBilling) updates.currentPeriodEnd = new Date(nextBilling);
         updates.updatedAt = new Date();
 
         await db
           .update(schema.subscriptions)
           .set(updates)
-          .where(eq(schema.subscriptions.lemonSqueezySubscriptionId, subId));
-        break;
-      }
-
-      case 'subscription_cancelled': {
-        await db
-          .update(schema.subscriptions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
-          .where(eq(schema.subscriptions.lemonSqueezySubscriptionId, subId));
-        break;
-      }
-
-      case 'subscription_payment_failed': {
-        await db
-          .update(schema.subscriptions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
-          .where(eq(schema.subscriptions.lemonSqueezySubscriptionId, subId));
-        console.error('[LS Webhook] Payment failed:', { subId, userId, variantName });
-        break;
-      }
-
-      case 'subscription_expired': {
-        await db
-          .update(schema.subscriptions)
-          .set({ status: 'expired', updatedAt: new Date() })
-          .where(eq(schema.subscriptions.lemonSqueezySubscriptionId, subId));
-        console.log('[LS Webhook] Subscription expired:', { subId, userId, variantName });
+          .where(eq(schema.subscriptions.paypalSubscriptionId, subId));
         break;
       }
 
@@ -126,7 +101,7 @@ export async function POST(request: Request) {
         break;
     }
   } catch (err) {
-    console.error('Webhook processing failed:', err);
+    console.error('PayPal webhook processing failed:', err);
     return Response.json({ error: 'Processing failed' }, { status: 400 });
   }
 

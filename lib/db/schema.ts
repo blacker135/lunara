@@ -82,15 +82,12 @@ export const subscriptions = pgTable('subscriptions', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  lemonSqueezySubscriptionId: text('lemon_squeezy_subscription_id').notNull().unique(),
-  lemonSqueezyVariantId: text('lemon_squeezy_variant_id').notNull(),
+  paypalSubscriptionId: text('paypal_subscription_id').notNull().unique(),
+  paypalPlanId: text('paypal_plan_id').notNull(),
   variantName: text('variant_name').notNull(), // 'starter' | 'pro' | 'ultra'
   status: subscriptionStatusEnum('status').notNull().default('active'),
   currentPeriodStart: timestamp('current_period_start'),
   currentPeriodEnd: timestamp('current_period_end'),
-  lemonSqueezyCustomerId: text('lemon_squeezy_customer_id'),   // LS 客户 ID
-  lemonSqueezyOrderId: text('lemon_squeezy_order_id'),         // LS 订单 ID
-  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

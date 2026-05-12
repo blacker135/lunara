@@ -1,16 +1,17 @@
 // components/pricing/PricingCard.tsx
-// 单个方案卡片：展示方案名、价格、权益列表、CTA 按钮
+// 单个方案卡片：展示方案名、价格、权益列表、PayPal 订阅按钮
 
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { PayPalButton } from './PayPalButton';
 
 interface PlanData {
   id: string;
   name: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  planId: string;
   features: string[];
   highlighted?: boolean;
 }
@@ -18,14 +19,12 @@ interface PlanData {
 interface PricingCardProps {
   plan: PlanData;
   isYearly: boolean;
-  isTestPlan: boolean;   // $0.01 测试方案
+  isTestPlan: boolean;
   isLoggedIn: boolean;
-  variantId: string;
   lang: string;
 }
 
-export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, variantId, lang }: PricingCardProps) {
-  const router = useRouter();
+export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, lang }: PricingCardProps) {
   const tp = useTranslations('pricing');
 
   // 折算月费（年费 ÷ 12）
@@ -33,34 +32,11 @@ export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, variantId,
   // 年付比月付节省的百分比
   const savePercent = Math.round((1 - plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100);
 
-  // 展示价格：年付显示折算月费，月付显示月费（非整数价格保留两位小数）
-  const displayPrice = isYearly ? monthlyEquivalent
-    : isTestPlan ? plan.monthlyPrice.toFixed(2)
+  const displayPrice = isYearly
+    ? monthlyEquivalent
     : plan.monthlyPrice;
 
   const periodLabel = `/${tp('month')}`;
-
-  /** 处理 CTA 按钮点击：未登录跳转登录页，已登录跳转 LemonSqueezy checkout */
-  const handleCTA = async () => {
-    if (!isLoggedIn) {
-      router.push(`/${lang}/auth/login?redirect=/pricing`);
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/subscription/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ variant_id: variantId }),
-      });
-      if (res.ok) {
-        const { url } = await res.json();
-        window.location.href = url;
-      }
-    } catch (err) {
-      console.error('Checkout failed:', err);
-    }
-  };
 
   return (
     <div
@@ -83,7 +59,7 @@ export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, variantId,
         )}
       </div>
 
-      {/* 年付省钱展示：原月费删除线 + 省钱百分比 */}
+      {/* 年付省钱展示 */}
       {isYearly && (
         <div className="mt-1 flex items-center gap-1.5">
           <span className="text-xs text-text-secondary line-through">
@@ -113,22 +89,13 @@ export function PricingCard({ plan, isYearly, isTestPlan, isLoggedIn, variantId,
         ))}
       </ul>
 
-      {/* CTA 按钮 */}
-      <button
-        type="button"
-        onClick={handleCTA}
-        className={`mt-6 w-full rounded-[16px] py-2.5 text-sm font-medium transition-colors ${
-          plan.highlighted
-            ? 'bg-[#FF7A59] text-white hover:bg-[#FF7A59]/90'
-            : 'bg-[#FAF7F2] text-text-primary hover:bg-gray-100'
-        }`}
-      >
-        {isTestPlan
-          ? tp('testPlanCTA')
-          : isLoggedIn
-            ? tp('subscribe')
-            : tp('startTrial')}
-      </button>
+      {/* CTA — PayPal 订阅按钮 */}
+      <PayPalButton
+        planId={plan.planId}
+        planName={isTestPlan ? tp('testPlanName') : plan.name}
+        isLoggedIn={isLoggedIn}
+        lang={lang}
+      />
     </div>
   );
 }
