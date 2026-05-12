@@ -3,11 +3,11 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { db, schema } from '@/lib/db';
-import { eq, asc, and, gte, count } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { createDeepSeekClient } from '@/lib/deepseek/client';
 import { getExpertPrompt } from '@/lib/prompts/experts';
 import type { ExpertId, Language } from '@/lib/prompts/experts';
-import { checkTrialAccess } from '@/lib/subscription/gate';
+import { checkSubscriptionGate } from '@/lib/subscription/gate';
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
@@ -38,32 +38,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
-  // ---------- 订阅门控：事务原子 trial 检查 + 订阅查询 ----------
-  const [subscription] = await db
-    .select({ variant: schema.subscriptions.variantName, status: schema.subscriptions.status })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.userId, session.user.id));
-
-  const isSubscribed = subscription && subscription.status === 'active';
-  const variant = subscription?.variant || null;
-
-  // 未订阅用户：原子 trial 检查（共享门控函数）
-  let trialUsed = 0;
-  if (!isSubscribed) {
-    const trialResult = await checkTrialAccess(session.user.id);
-
-    trialUsed = trialResult.trialUsed;
-
-    if (!trialResult.allowed) {
-      return Response.json({
-        error: 'Trial exhausted',
-        code: 'TRIAL_EXHAUSTED',
-        trial_used: trialUsed,
-        trial_limit: trialResult.trialLimit,
-      }, { status: 402 });
-    }
-  }
-
+  // ---------- 订阅门控 ----------
   let body: { conversation_id?: string; expert?: string; message?: string; language?: string };
   try {
     body = await request.json();
@@ -83,48 +58,17 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid language' }, { status: 400 });
   }
 
-  // ---------- Starter 专家限制：仅开放 Evan 和 Liam ----------
-  if (isSubscribed && variant === 'starter') {
-    const starterExperts: ExpertId[] = ['evan', 'liam'];
-    if (!starterExperts.includes(expert as ExpertId)) {
-      return Response.json({
-        error: 'Expert locked',
-        code: 'EXPERT_LOCKED',
-        message: 'Upgrade to Pro or Ultra to unlock all experts.',
-      }, { status: 403 });
-    }
-  }
-
-  // ---------- 日消息量限额 ----------
-  if (isSubscribed && (variant === 'starter' || variant === 'pro')) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const [result] = await db
-      .select({ count: count() })
-      .from(schema.messages)
-      .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
-      .where(
-        and(
-          eq(schema.conversations.userId, session.user.id),
-          eq(schema.messages.role, 'user'),
-          gte(schema.messages.createdAt, todayStart),
-        ),
-      );
-
-    const dailyLimit = variant === 'starter' ? 30 : 100;
-    if ((result?.count || 0) >= dailyLimit) {
-      return Response.json({
-        error: 'Daily message limit reached',
-        code: 'DAILY_LIMIT',
-        message: `You've reached the daily limit of ${dailyLimit} messages.`,
-      }, { status: 429 });
-    }
-  }
-
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
     return Response.json({ error: 'Message is required' }, { status: 400 });
   }
+
+  // 统一门控检查（consume 模式：原子递增 trial 计数）
+  const gateResult = await checkSubscriptionGate(session.user.id, expert as ExpertId, 'consume');
+  if (!gateResult.allowed) {
+    return Response.json({ error: gateResult.message, code: gateResult.code }, { status: gateResult.status });
+  }
+  const { isSubscribed, variant } = gateResult;
+  // ---------- 门控结束 ----------
 
   let conversationId = conversation_id;
 
