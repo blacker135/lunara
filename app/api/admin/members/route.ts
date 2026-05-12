@@ -43,7 +43,10 @@ export async function POST(req: NextRequest) {
     });
 
     // CSV 安全转义，防止注入
-    const escapeCsv = (val: string) => `"${val.replace(/"/g, '""')}"`;
+    const escapeCsv = (val: string) => {
+      const escaped = `"${String(val).replace(/"/g, '""')}"`;
+      return /^[=+\-@]/.test(String(val)) ? `'\t${escaped}` : escaped;
+    };
 
     const header = '姓名,邮箱,等级,消息数,注册时间';
     const rows = data.members.map((m) =>
