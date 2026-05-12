@@ -294,7 +294,7 @@
     "monthlyEquivalent": "${price}/mo equivalent",
     "savePerYear": "Save {percent}%",
     "testPlanName": "Test Plan",
-    "testPlanCTA": "Test Pay ($0.50)"
+    "testPlanCTA": "Test Pay ($0.10)"
   },
   "membership": {
     "upgrade": "Upgrade",
