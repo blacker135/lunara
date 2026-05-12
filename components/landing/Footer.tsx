@@ -3,20 +3,22 @@
  *
  * 简洁的页脚区域，包含：
  * - 品牌标语
- * - 隐私政策 / 服务条款 / 联系链接
+ * - 隐私政策 / 服务条款 / 退款政策 / 联系链接
  * - 版权信息
  */
 
 'use client';
 
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 /**
  * 页脚组件
- * 纯展示，链接暂时使用占位符 #
+ * 从 URL 获取当前语言，构建本地化法律页面链接
  */
 export function Footer() {
   const t = useTranslations('footer');
+  const { lang } = useParams<{ lang: string }>();
 
   return (
     <footer className="border-t border-[#E8E0D8] py-12">
@@ -27,11 +29,14 @@ export function Footer() {
 
           {/* 链接区 */}
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
+            <a href={`/${lang}/privacy`} className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
               {t('privacy')}
             </a>
-            <a href="#" className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
+            <a href={`/${lang}/terms`} className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
               {t('terms')}
+            </a>
+            <a href={`/${lang}/refund`} className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
+              {t('refund')}
             </a>
             <a href="#" className="text-sm text-[#999999] transition-colors hover:text-[#FF7A59]">
               {t('contact')}
