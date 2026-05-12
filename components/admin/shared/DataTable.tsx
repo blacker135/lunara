@@ -24,7 +24,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
 }
 
-export default function DataTable<T extends Record<string, unknown>>({
+export default function DataTable<T extends Record<string, any>>({
   columns,
   data,
   total,
