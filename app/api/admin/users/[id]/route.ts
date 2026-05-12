@@ -52,8 +52,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const { name, email } = body;
 
-  await db.update(schema.user).set({ name, email }).where(eq(schema.user.id, id));
-  return NextResponse.json({ success: true });
+  // 输入验证：姓名和邮箱不能为空
+  if (!name || !email) {
+    return NextResponse.json({ error: '姓名和邮箱不能为空' }, { status: 400 });
+  }
+
+  try {
+    await db.update(schema.user).set({ name, email }).where(eq(schema.user.id, id));
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[AdminUsers] 编辑用户失败:', error);
+    return NextResponse.json({ error: '编辑用户失败' }, { status: 500 });
+  }
 }
 
 // DELETE: 删除用户及其关联数据（ON DELETE CASCADE 自动处理级联）

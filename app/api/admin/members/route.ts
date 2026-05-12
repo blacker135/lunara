@@ -33,25 +33,34 @@ export async function POST(req: NextRequest) {
   const auth = await getAdminUserId();
   if (auth instanceof NextResponse) return auth;
 
-  const { variantName } = await req.json();
+  try {
+    const { variantName } = await req.json();
 
-  const data = await queryMembers({
-    variantName: variantName || undefined,
-    page: 1,
-    pageSize: 10000,
-  });
+    const data = await queryMembers({
+      variantName: variantName || undefined,
+      page: 1,
+      pageSize: 10000,
+    });
 
-  const header = '姓名,邮箱,等级,消息数,注册时间';
-  const rows = data.members.map(
-    (m) =>
-      `${m.name},${m.email},${m.variantName ?? '-'},${m.messageCount},${m.createdAt}`,
-  );
-  const csv = [header, ...rows].join('\n');
+    // CSV 安全转义，防止注入
+    const escapeCsv = (val: string) => `"${val.replace(/"/g, '""')}"`;
 
-  return new NextResponse(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename=members.csv',
-    },
-  });
+    const header = '姓名,邮箱,等级,消息数,注册时间';
+    const rows = data.members.map((m) =>
+      [m.name, m.email, m.variantName ?? '-', String(m.messageCount), m.createdAt]
+        .map(escapeCsv)
+        .join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename=members.csv',
+      },
+    });
+  } catch (error) {
+    console.error('[AdminMembers] 导出失败:', error);
+    return NextResponse.json({ error: '导出失败' }, { status: 500 });
+  }
 }
