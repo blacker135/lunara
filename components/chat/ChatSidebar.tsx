@@ -100,7 +100,7 @@ export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: Ch
 
   // 侧边栏左侧内容（桌面端和移动端共用样式）
   const sidebarContent = (
-    <aside className="flex h-full w-72 flex-shrink-0 flex-col border-r border-gray-100 bg-white">
+    <aside className="flex h-full w-72 lg:w-80 flex-shrink-0 flex-col border-r border-gray-100 bg-white">
       {/* 移动端顶部：关闭按钮 */}
       <button
         type="button"
@@ -128,9 +128,9 @@ export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: Ch
         <Link
           href={`/${lang}/chat/liam`}
           onClick={onClose}
-          className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#FF7A59] px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#FF7A59]/90"
+          className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#FF7A59] px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#FF7A59]/90 cursor-pointer touch-manipulation min-h-[44px]"
         >
-          <span className="text-lg leading-none">+</span>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" /></svg>
           {t('newChat')}
         </Link>
       </div>
@@ -174,7 +174,7 @@ export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: Ch
                       router.push(`/${lang}/chat/${expert}?c=${conv.id}`);
                       onClose?.();
                     }}
-                    className="flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 pr-10 text-left transition-colors hover:bg-gray-50"
+                    className="flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 pr-10 text-left transition-colors hover:bg-gray-50 cursor-pointer touch-manipulation"
                   >
                     {/* 专家颜色圆点 */}
                     <span
@@ -198,7 +198,7 @@ export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: Ch
                       e.stopPropagation();
                       handleDelete(conv.id);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1.5 text-gray-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[8px] p-1.5 text-gray-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-50 hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label="Delete conversation"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -229,7 +229,7 @@ export function ChatSidebar({ sidebarOpen = false, onClose, refreshKey = 0 }: Ch
             aria-hidden="true"
           />
           {/* 滑入抽屉 */}
-          <div className="absolute inset-y-0 left-0 z-50 animate-slide-in-left">
+          <div className="absolute inset-y-0 left-0 z-50 animate-slide-in-left w-[85vw] max-w-[320px]">
             {sidebarContent}
           </div>
         </div>
