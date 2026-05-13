@@ -202,6 +202,7 @@ export async function queryTrafficSeries(range: DateRange): Promise<{
 /** 用户列表（搜索/筛选/分页） */
 export interface UserListParams {
   search?: string;
+  variant?: string;  // 按会员身份筛选：free | starter | pro | ultra | admin
   page: number;
   pageSize: number;
 }
@@ -212,34 +213,57 @@ export interface UserRow {
   email: string;
   variantName: string | null;
   subscriptionStatus: string | null;
+  currentPeriodEnd: string | null;  // 订阅当期结束时间
+  dailyLimit: number | null;        // 每日用量上限
   messageCount: number;
   createdAt: string;
 }
 
 export async function queryUsers(params: UserListParams): Promise<{ users: UserRow[]; total: number }> {
   const offset = (params.page - 1) * params.pageSize;
-  const searchFilter = params.search
-    ? sql`AND (u.name ILIKE ${'%' + params.search + '%'} OR u.email ILIKE ${'%' + params.search + '%'})`
-    : sql``;
+
+  // 构建 WHERE 条件数组，始终以 1=1 为基准，然后追加过滤条件
+  const conditions = [sql`1=1`];
+
+  if (params.search) {
+    conditions.push(sql`AND (u.name ILIKE ${'%' + params.search + '%'} OR u.email ILIKE ${'%' + params.search + '%'})`);
+  }
+
+  if (params.variant) {
+    if (params.variant === 'free') {
+      // 免费用户：无订阅记录 或 订阅状态非 active
+      conditions.push(sql`AND (s.id IS NULL OR s.status != 'active')`);
+    } else {
+      // 按具体会员身份筛选（starter / pro / ultra / admin）
+      conditions.push(sql`AND s.status = 'active' AND s.variant_name = ${params.variant}`);
+    }
+  }
+
+  const whereClause = sql.join(conditions, sql` `);
 
   const countResult = await db.execute<{ count: number }>(
-    sql`SELECT COUNT(*)::int as count FROM "user" u WHERE 1=1 ${searchFilter}`
+    sql`SELECT COUNT(*)::int as count FROM "user" u
+        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
+        WHERE ${whereClause}`
   );
 
   const result = await db.execute(
     sql`SELECT
           u.id, u.name, u.email, u.created_at as "createdAt",
           s.variant_name as "variantName", s.status as "subscriptionStatus",
+          s.current_period_end as "currentPeriodEnd",
+          p.daily_limit as "dailyLimit",
           COALESCE(m.msg_count, 0)::int as "messageCount"
         FROM "user" u
         LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
+        LEFT JOIN profiles p ON u.id = p.user_id
         LEFT JOIN (
           SELECT c.user_id, COUNT(*) as msg_count
           FROM messages m
           JOIN conversations c ON m.conversation_id = c.id
           GROUP BY c.user_id
         ) m ON m.user_id = u.id
-        WHERE 1=1 ${searchFilter}
+        WHERE ${whereClause}
         ORDER BY u.created_at DESC
         LIMIT ${params.pageSize} OFFSET ${offset}`
   );
