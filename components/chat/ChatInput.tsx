@@ -58,10 +58,10 @@ export function ChatInput({ onSend, disabled = false, generating = false, onStop
 
   // ---------- 渲染 ----------
   return (
-    <div className="border-t border-gray-100 bg-white px-4 py-3">
+    <div className="border-t border-gray-100 bg-white px-3 sm:px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
       <form
         onSubmit={handleSubmit}
-        className="flex items-end gap-3 rounded-[18px] bg-[#FAF7F2] px-4 py-3"
+        className="flex items-end gap-2 sm:gap-3 rounded-[14px] sm:rounded-[18px] bg-[#FAF7F2] px-3 sm:px-4 py-2.5 sm:py-3"
       >
         {/* 消息输入框 — 自适应高度 textarea */}
         <textarea
@@ -70,7 +70,7 @@ export function ChatInput({ onSend, disabled = false, generating = false, onStop
           onKeyDown={handleKeyDown}
           placeholder={t('inputPlaceholder')}
           rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-text-primary placeholder-gray-400 outline-none"
+          className="flex-1 resize-none bg-transparent text-[16px] leading-relaxed text-text-primary placeholder-gray-400 outline-none touch-manipulation"
           style={{ maxHeight: '120px' }}
           onInput={(e) => {
             // 自动调整高度
@@ -85,7 +85,7 @@ export function ChatInput({ onSend, disabled = false, generating = false, onStop
           <button
             type="button"
             onClick={onStop}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-red-500 text-white transition-all hover:bg-red-600"
+            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-full bg-red-500 text-white transition-all hover:bg-red-600 cursor-pointer touch-manipulation"
             aria-label="Stop generating"
           >
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@ export function ChatInput({ onSend, disabled = false, generating = false, onStop
           <button
             type="submit"
             disabled={disabled || !input.trim()}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#FF7A59] text-white transition-all hover:bg-[#FF7A59]/90 disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-full bg-[#FF7A59] text-white transition-all hover:bg-[#FF7A59]/90 disabled:cursor-not-allowed disabled:opacity-30 cursor-pointer touch-manipulation"
             aria-label={t('send')}
           >
             <svg
