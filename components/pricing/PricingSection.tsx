@@ -68,7 +68,7 @@ export function PricingSection({ lang, isLoggedIn, showTestPlan, planIds }: Pric
       yearlyPrice: 548.9,
       planId: isYearly ? planIds.ultraYearly : planIds.ultraMonthly,
       features: [
-        tp('features.unlimitedMessages'),
+        tp('features.dailyMessages', { count: 10000 }),
         tp('features.expertsAll'),
         tp('features.historyForever'),
         tp('features.effectDeep'),

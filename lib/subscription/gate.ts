@@ -9,10 +9,11 @@ import type { ExpertId } from '@/lib/prompts/experts';
 /** 试用消息上限 */
 const TRIAL_LIMIT = 3;
 
-/** 日限额配置 */
+/** 日限额配置（默认值，可被 profiles.daily_limit 覆盖） */
 const DAILY_LIMITS: Record<string, number> = {
   starter: 30,
   pro: 100,
+  ultra: 10000,
 };
 
 /** Starter 可访问的专家 */
@@ -141,11 +142,12 @@ export async function checkSubscriptionGate(
     };
   }
 
-  // 4. 已订阅 → 日限额检查（Ultra 无限制）
-  if (variant === 'starter' || variant === 'pro') {
+  // 4. 已订阅 → 日限额检查（所有有 limit 配置的方案都检查）
+  if (variant && DAILY_LIMITS[variant] !== undefined) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    // 查询当日用户消息数
     const [result] = await db
       .select({ count: count() })
       .from(schema.messages)
@@ -158,8 +160,14 @@ export async function checkSubscriptionGate(
         ),
       );
 
-    const limit = DAILY_LIMITS[variant];
-    if ((result?.count || 0) >= limit) {
+    // 用户自定义日限额优先，否则使用方案默认值；null 表示无限制
+    const planLimit = DAILY_LIMITS[variant];
+    const [profile] = await db
+      .select({ dailyLimit: schema.profiles.dailyLimit })
+      .from(schema.profiles)
+      .where(eq(schema.profiles.userId, userId));
+    const limit = profile?.dailyLimit ?? planLimit;
+    if (limit !== null && (result?.count || 0) >= limit) {
       return {
         allowed: false,
         code: 'DAILY_LIMIT',
