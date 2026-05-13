@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { EXPERT_META } from '@/lib/prompts/experts';
 import type { ExpertId } from '@/lib/prompts/experts';
+import { ExpertAvatar } from './ExpertAvatar';
 
 /** ExpertSwitchPanel Props */
 interface ExpertSwitchPanelProps {
@@ -93,7 +94,7 @@ export function ExpertSwitchPanel({
         {/* 面板卡片 — 圆角 32px */}
         <motion.div
           ref={panelRef}
-          className="mx-4 w-full max-w-lg rounded-[32px] bg-white p-8 shadow-soft"
+          className="mx-2 w-full max-w-lg rounded-[24px] sm:rounded-[32px] bg-white p-6 sm:p-8 shadow-soft max-h-[80vh] overflow-y-auto"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -124,7 +125,7 @@ export function ExpertSwitchPanel({
                     if (isLocked) return;
                     onSelect(id);
                   }}
-                  className={`flex w-full items-center gap-4 rounded-[20px] border-2 p-4 text-left transition-all ${
+                  className={`flex w-full items-center gap-4 rounded-[20px] border-2 p-4 text-left transition-all min-h-[44px] cursor-pointer touch-manipulation ${
                     isActive
                       ? 'border-[#FF7A59] bg-[#FF7A59]/5'
                       : isLocked
@@ -132,16 +133,10 @@ export function ExpertSwitchPanel({
                         : 'border-transparent bg-[#FAF7F2] hover:bg-gray-100'
                   }`}
                 >
-                  {/* Emoji 圆形头像 */}
-                  <span
-                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-2xl"
-                    style={{
-                      backgroundColor: `${meta.color}15`,
-                      color: meta.color,
-                    }}
-                  >
-                    {meta.emoji}
-                  </span>
+                  {/* 专家头像（锁定状态不显示） */}
+                  {!isLocked && (
+                    <ExpertAvatar expert={id} size="sm" />
+                  )}
                   {/* 专家信息（翻译字段） */}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-text-primary">
@@ -168,7 +163,7 @@ export function ExpertSwitchPanel({
           <button
             type="button"
             onClick={onClose}
-            className="mt-6 w-full rounded-[16px] border border-gray-200 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50"
+            className="mt-6 w-full rounded-[16px] border border-gray-200 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-gray-50 cursor-pointer touch-manipulation min-h-[44px]"
           >
             {t('cancel')}
           </button>
