@@ -204,7 +204,7 @@ export function NavbarClient({ lang, user, membership, isAdmin = false }: Navbar
               {t('home')}
             </Link>
             <Link
-              href={`/${lang}/chat/liam`}
+              href={`/${lang}/chat`}
               className="text-[#777777] hover:text-[#2B2B2B] transition-colors"
             >
               {t('startChat')}
