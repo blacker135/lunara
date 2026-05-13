@@ -52,6 +52,7 @@ export default function ChatPageClient() {
   const [sending, setSending] = useState(false);
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // ---------- 订阅状态 ----------
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
@@ -108,6 +109,7 @@ export default function ChatPageClient() {
     setConversationId(urlConvId);
     setMessages([]);
     setError(null);
+    setLoadingHistory(true);
 
     fetch(`/api/conversations/${urlConvId}`)
       .then((res) => {
@@ -128,7 +130,8 @@ export default function ChatPageClient() {
       })
       .catch((err) =>
         console.error('Failed to load conversation:', err),
-      );
+      )
+      .finally(() => setLoadingHistory(false));
   }, [urlConvId]);
 
   // ---------- 发送消息 ----------
@@ -186,13 +189,17 @@ export default function ChatPageClient() {
           setSubscriptionStatus((prev) =>
             prev ? { ...prev, trialUsed: prev.trialLimit } : prev
           );
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: '你已用完 3 条免费消息，请订阅后继续。',
-            },
-          ]);
+          // 回滚乐观更新的用户消息
+          setMessages((prev) => {
+            const rolled = prev.filter((m) => m !== userMsg);
+            return [
+              ...rolled,
+              {
+                role: 'assistant',
+                content: '你已用完 3 条免费消息，请订阅后继续。',
+              },
+            ];
+          });
           return;
         }
 
@@ -476,6 +483,7 @@ export default function ChatPageClient() {
           expert={currentExpert}
           onSuggestionClick={(text) => handleSend(text)}
           subscriptionStatus={subscriptionStatus}
+          loadingHistory={loadingHistory}
         />
 
         {/* 底部输入区域 */}
