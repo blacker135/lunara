@@ -149,7 +149,7 @@ export function MessageList({
         <button
           type="button"
           onClick={scrollToBottom}
-          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full bg-[#FF7A59] px-4 py-2 text-xs font-medium text-white shadow-lg transition-all hover:bg-[#FF7A59]/90 animate-bounce"
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full bg-[#FF7A59] px-4 py-2 text-xs font-medium text-white shadow-lg transition-all hover:bg-[#FF7A59]/90 animate-bounce cursor-pointer touch-manipulation"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
