@@ -108,7 +108,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             .set({
               variantName,
               status: 'active',
-              currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd) : null,
+              currentPeriodEnd: currentPeriodEnd !== undefined
+                ? (currentPeriodEnd ? new Date(currentPeriodEnd) : null)
+                : existingSub.currentPeriodEnd,
               updatedAt: new Date(),
             })
             .where(eq(schema.subscriptions.id, existingSub.id));
